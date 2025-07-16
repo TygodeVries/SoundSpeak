@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SoundSpeakGUI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c8c7615c53cfdd2c7a8a087d773a0b0a664c4887")]
 [assembly: System.Reflection.AssemblyProductAttribute("SoundSpeakGUI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SoundSpeakGUI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

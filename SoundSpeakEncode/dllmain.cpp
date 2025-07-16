@@ -6,6 +6,8 @@
 #include <mmeapi.h>
 #pragma comment(lib, "winmm")
 
+#include <stdio.h>
+
 #include <queue>
 
 struct sample
@@ -21,10 +23,13 @@ void wave_cb(HWAVEOUT wave, UINT msg, WPARAM wParam, LPARAM lParam)
     switch (msg)
     {
     case WOM_OPEN:
+        printf("out open\n");
         break;
     case WOM_CLOSE:
+        printf("out close\n");
         break;
     case WOM_DONE:
+        printf("out sample\n");
         WAVEHDR* hdr = (WAVEHDR*)lParam;
         memset(hdr->lpData, 128, 128);
         if (!samples.empty())
