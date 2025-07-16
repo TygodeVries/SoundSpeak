@@ -1,11 +1,29 @@
 {
   "version": 3,
   "targets": {
-    "net8.0": {}
+    "net8.0": {
+      "SoundSpeakEncode/1.0.0": {
+        "type": "project",
+        "compile": {
+          "bin/placeholder/SoundSpeakEncode.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/SoundSpeakEncode.dll": {}
+        }
+      }
+    }
   },
-  "libraries": {},
+  "libraries": {
+    "SoundSpeakEncode/1.0.0": {
+      "type": "project",
+      "path": "../SoundSpeakEncode/SoundSpeakEncode.vcxproj",
+      "msbuildProject": "../SoundSpeakEncode/SoundSpeakEncode.vcxproj"
+    }
+  },
   "projectFileDependencyGroups": {
-    "net8.0": []
+    "net8.0": [
+      "SoundSpeakEncode >= 1.0.0"
+    ]
   },
   "packageFolders": {
     "C:\\Users\\zttde\\.nuget\\packages\\": {},
@@ -39,7 +57,11 @@
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
-          "projectReferences": {}
+          "projectReferences": {
+            "C:\\Users\\zttde\\SoundSpeak\\SoundSpeakEncode\\SoundSpeakEncode.vcxproj": {
+              "projectPath": "C:\\Users\\zttde\\SoundSpeak\\SoundSpeakEncode\\SoundSpeakEncode.vcxproj"
+            }
+          }
         }
       },
       "warningProperties": {
