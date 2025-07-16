@@ -1,21 +1,76 @@
-﻿public class Program
+﻿using SoundSpeakGUI;
+using System.Text;
+
+public class Program
 {
-    static SoundHardware? soundHardware = null;
     public static void Main(string[] args)
     {
-        soundHardware = new SoundHardware();
-        soundHardware.soundData += (args) => Console.WriteLine("test");
+
+        Console.WriteLine("## Welcome to Sound Speak. ##");
+        Thread.Sleep(100);
+        Console.WriteLine("--  Communication of the future, in 1952. --");
+
+        string[] messages = new string[] {
+
+            "Hello, There!",
+            "Hey all!",
+            "Good morning!"
+        };
+
+        SoundHardware soundHardware = new SoundHardware();
+        soundHardware.soundData += (byte[] args) => OnData(args);
         soundHardware.Begin();
-        Random r = new Random();
-        for (int cx = 0; cx < 10240; cx++)
+
+        string inputMessage = "";
+        DrawUI(messages, inputMessage);
+        while (true)
         {
-            byte[] data = new byte[1024];
-            for (int cy = 0; cy < 1024; cy++)
+            if (Console.KeyAvailable)
             {
-                data[cy] = (byte)r.Next(255);
+                ConsoleKeyInfo key = Console.ReadKey();
+
+                Console.SetCursorPosition(0, 0);
+                if (key.Key == ConsoleKey.Enter)
+                {
+                    inputMessage = "";
+                }
+                else if (key.Key == ConsoleKey.Backspace)
+                {
+                    inputMessage = inputMessage.Remove(inputMessage.Length - 1);
+                }
+                else
+                {
+                    inputMessage += key.KeyChar;
+                }
+
+                DrawUI(messages, inputMessage);
             }
-            soundHardware.Enqueue(data);
         }
-        Thread.Sleep(1000);
+    }
+
+    public static void OnData(byte[] audioData)
+    {
+
+    }
+
+
+    public static void DrawUI(string[] messages, string inputMessage)
+    {
+        Console.Clear();
+
+        Console.WriteLine("- Recent Messages -");
+        foreach (string message in messages)
+        {
+            Console.WriteLine($":{message}");
+        }
+
+        Console.WriteLine();
+        Console.WriteLine("- Incoming Message -");
+        Console.WriteLine("Blah bl...");
+
+        Console.WriteLine();
+        Console.WriteLine();
+        Console.WriteLine("> " + inputMessage);
+        Console.CursorVisible = false;
     }
 }

@@ -31,46 +31,74 @@ void wave_cb(HWAVEOUT wave, UINT msg, WPARAM wParam, LPARAM lParam)
     case WOM_DONE:
         printf("out sample\n");
         WAVEHDR* hdr = (WAVEHDR*)lParam;
-        memset(hdr->lpData, 128, 128);
-        if (!samples.empty())
+        if (hdr->lpData)
         {
-            sample t = samples.front();
-            samples.pop();
-            memcpy(hdr->lpData, t.sample, 128);
-            delete t.sample;
-        }
+            memset(hdr->lpData, 128, 128);
+            if (!samples.empty())
+            {
+                sample t = samples.front();
+                samples.pop();
+                memcpy(hdr->lpData, t.sample, 128);
+                delete t.sample;
+            }
 
-        waveOutWrite(wave, (WAVEHDR*)lParam, sizeof(WAVEHDR));
+            waveOutWrite(wave, (WAVEHDR*)lParam, sizeof(WAVEHDR));
+        }
         break;
     }
 }
 
+#include <thread>
+
 struct MySoundHardware
 {
     void(* callback)(const char* data, int size);
+    std::thread pump;
+    ~MySoundHardware()
+    {
+        running = false;
+        pump.join();
+    }
+    bool running;
+    void Run()
+    {
+        pump = std::thread([&]()
+            {
+                HWAVEOUT wave;
+
+                WAVEFORMATEX format = { 0 };
+
+                format.cbSize = sizeof(format);
+                format.nChannels = 1;
+                format.wBitsPerSample = 8;
+                format.wFormatTag = WAVE_FORMAT_PCM;
+                format.nSamplesPerSec = 11025;
+                format.nBlockAlign = 1;
+                format.nAvgBytesPerSec = format.nSamplesPerSec * format.wBitsPerSample * format.nChannels / 8;
+                MMRESULT result = waveOutOpen(&wave, WAVE_MAPPER, &format, (DWORD_PTR)&wave_cb, 0, CALLBACK_FUNCTION);
+
+                WAVEHDR hdr[4] = { 0 };
+                for (int cx = 0; cx < 4; cx++)
+                {
+                    hdr[cx].dwBufferLength = 128;
+                    hdr[cx].lpData = new char[128];
+                    waveOutPrepareHeader(wave, &hdr[cx], sizeof(hdr[cx]));
+                    waveOutWrite(wave, &hdr[cx], sizeof(hdr[cx]));
+                }
+
+
+                while (running)
+                {
+                    MSG msg;
+                    while (PeekMessage(&msg, 0, 0, 0, 1))
+                        DispatchMessage(&msg);
+
+                }
+            });
+    }
+
     MySoundHardware(void (*callback)(const char* data, int size)):callback(callback)
     {
-        HWAVEOUT wave;
-
-        WAVEFORMATEX format = { 0 };
-
-        format.cbSize = sizeof(format);
-        format.nChannels = 1;
-        format.wBitsPerSample = 8;
-        format.wFormatTag = WAVE_FORMAT_PCM;
-        format.nSamplesPerSec = 11025;
-        format.nBlockAlign = 1;
-        format.nAvgBytesPerSec = format.nSamplesPerSec * format.wBitsPerSample * format.nChannels / 8;
-        MMRESULT result = waveOutOpen(&wave, WAVE_MAPPER, &format, (DWORD_PTR)&wave_cb, 0, CALLBACK_FUNCTION);
-
-        WAVEHDR hdr[4] = { 0 };
-        for (int cx = 0; cx < 4; cx++)
-        {
-            hdr[cx].dwBufferLength = 128;
-            hdr[cx].lpData = new char[128];
-            waveOutPrepareHeader(wave, &hdr[cx], sizeof(hdr[cx]));
-            waveOutWrite(wave, &hdr[cx], sizeof(hdr[cx]));
-        }
     }
 };
 
@@ -97,8 +125,7 @@ public:
     }
     void Begin()
     {
-        if (soundData)
-            soundData(nullptr);
+        inner->Run();
     }
     void Enqueue(cli::array<System::Byte>^ data)
     {
@@ -109,6 +136,9 @@ public:
                 d[cx] = data[cx];
             samples.push({ 128, d });
         }
+    }
+    void Pump()
+    {
     }
     delegate void SoundData(cli::array<Byte>^ data);
     SoundData ^soundData;
