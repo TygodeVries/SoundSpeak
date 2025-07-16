@@ -7,4 +7,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\SoundSpeakEncode\SoundSpeakEncode.vcxproj" />
+  </ItemGroup>
+
 </Project>
