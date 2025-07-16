@@ -45,6 +45,7 @@ public class Program
 
                 DrawUI(messages, inputMessage);
             }
+
         }
     }
 
