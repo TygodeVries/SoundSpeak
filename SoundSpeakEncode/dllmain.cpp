@@ -29,7 +29,6 @@ void wave_cb(HWAVEOUT wave, UINT msg, WPARAM wParam, LPARAM lParam)
         printf("out close\n");
         break;
     case WOM_DONE:
-        printf("out sample\n");
         WAVEHDR* hdr = (WAVEHDR*)lParam;
         if (hdr->lpData)
         {
@@ -47,12 +46,37 @@ void wave_cb(HWAVEOUT wave, UINT msg, WPARAM wParam, LPARAM lParam)
         break;
     }
 }
+std::queue<unsigned char*> in_samples;
+void wave_in_cb(HWAVEIN wave, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    switch (msg)
+    {
+    case WIM_OPEN:
+        printf("in open\n");
+        break;
+    case WIM_CLOSE:
+        printf("in close\n");
+        break;
+    case WIM_DATA:
+        WAVEHDR* hdr = (WAVEHDR*)lParam;
+        if (hdr->lpData)
+        {
+            printf("in data\n");
+            unsigned char* data = new unsigned char[128];
+            memcpy(data, hdr->lpData, 128);
+            waveInAddBuffer(wave, hdr, sizeof(WAVEHDR));
+            in_samples.push(data);
+        }
+        break;
+    }
+}
 
 #include <thread>
-
+ref class SoundHardware;
+delegate void soundInput(const char* data, int length);
 struct MySoundHardware
 {
-    void(* callback)(const char* data, int size);
+    void(* callback)(const unsigned char* data, int size);
     std::thread pump;
     ~MySoundHardware()
     {
@@ -86,6 +110,19 @@ struct MySoundHardware
                     waveOutWrite(wave, &hdr[cx], sizeof(hdr[cx]));
                 }
 
+                HWAVEIN wave_in;
+                result = waveInOpen(&wave_in, WAVE_MAPPER, &format, (DWORD_PTR)&wave_in_cb, 0, CALLBACK_FUNCTION);
+
+                WAVEHDR hdr_in[4] = { 0 };
+                for (int cx = 0; cx < 4; cx++)
+                {
+                    hdr_in[cx].dwBufferLength = 128;
+                    hdr_in[cx].lpData = new char[128];
+                    waveInPrepareHeader(wave_in, &hdr_in[cx], sizeof(WAVEHDR));
+                    waveInAddBuffer(wave_in, &hdr_in[cx], sizeof(WAVEHDR));
+                    waveInStart(wave_in);
+                }
+
 
                 while (running)
                 {
@@ -93,11 +130,25 @@ struct MySoundHardware
                     while (PeekMessage(&msg, 0, 0, 0, 1))
                         DispatchMessage(&msg);
 
+                    while (in_samples.size() > 10)
+                    {
+                        unsigned char sample[10 * 128];
+                        for (int cx = 0; cx < 10; cx++)
+                        {
+                            unsigned char* data = in_samples.front();
+                            in_samples.pop();
+                            memcpy(sample + cx * 128, data, 128);
+                            delete data;
+                            if (callback)
+                                callback(sample, 1280);
+                        }
+
+                    }
                 }
             });
     }
 
-    MySoundHardware(void (*callback)(const char* data, int size)):callback(callback)
+    MySoundHardware()
     {
     }
 };
@@ -108,16 +159,23 @@ using namespace System;
 public ref class SoundHardware
 {
     MySoundHardware* inner;
-    delegate void soundInput(const char* data, int length);
-    soundInput ^input;
+    soundInput^ input;
     void SoundInput(const char* data, int length)
     {
+        cli::array<Byte>^ a = gcnew cli::array<Byte>(length);
+        for (int cx = 0; cx < length; cx++)
+            a[cx] = data[cx];
+        if (soundData)
+            soundData(a);
+
     }
 public:
     SoundHardware()
     {
-        input += gcnew soundInput(this, &SoundHardware::SoundInput);
-        inner = new MySoundHardware(nullptr);
+        input = gcnew soundInput(this, &SoundHardware::SoundInput);
+        inner = new MySoundHardware();
+        inner->callback = (void (*)(const unsigned char *, int))
+            Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate(input).ToPointer();
     }
     ~SoundHardware()
     {
@@ -129,11 +187,11 @@ public:
     }
     void Enqueue(cli::array<System::Byte>^ data)
     {
-        for (int offset = 0; offset < data->Length; offset += 128)
+        for (int offset = 0; offset < data->Length-128; offset += 128)
         {
             unsigned char* d = new unsigned char[data->Length];
             for (int cx = 0; cx < 128; cx++)
-                d[cx] = data[cx];
+                d[cx] = data[offset + cx];
             samples.push({ 128, d });
         }
     }
