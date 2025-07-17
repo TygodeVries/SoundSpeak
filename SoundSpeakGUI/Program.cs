@@ -32,6 +32,14 @@ public class Program
                 Console.SetCursorPosition(0, 0);
                 if (key.Key == ConsoleKey.Enter)
                 {
+                    foreach (char c in inputMessage)
+                    {
+                        byte[] sample = new byte[512];
+                        sample[2*c] = 128;
+                        soundHardware.Enqueue(sample);
+                        sample[511] = 128;
+                        soundHardware.Enqueue(sample);
+                    }
                     inputMessage = "";
                 }
                 else if (key.Key == ConsoleKey.Backspace)

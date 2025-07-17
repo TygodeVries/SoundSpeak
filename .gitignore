@@ -5,3 +5,5 @@ SoundSpeakGUI/obj
 /x64/Debug
 /Debug
 /SoundSpeakEncode/Debug
+/SoundSpeakEncode/x64/Release
+/x64/Release
